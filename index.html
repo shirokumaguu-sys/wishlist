@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ほしいものリスト</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --accent-color: #ffc107;
+            --danger-color: #dc3545;
+            --border-color: #dee2e6;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #121212;
+                --card-bg: #1e1e1e;
+                --text-color: #e0e0e0;
+                --primary-color: #3786ff;
+                --secondary-color: #a0a0a0;
+                --border-color: #333333;
+                --shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .summary-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-label {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            display: block;
+        }
+
+        .summary-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-secondary { background-color: var(--secondary-color); color: white; }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-accent { background-color: var(--accent-color); color: #000; }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .category-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .category-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.03);
+        }
+
+        .category-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .category-stats {
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+        }
+
+        .item-list {
+            list-style: none;
+            padding: 10px;
+        }
+
+        .item-row {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            position: relative;
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .item-name {
+            font-weight: bold;
+            word-break: break-all;
+            flex: 1;
+        }
+
+        .item-price {
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-left: 10px;
+        }
+
+        .item-url {
+            font-size: 0.8rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .item-url:hover {
+            text-decoration: underline;
+        }
+
+        .item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .item-date {
+            font-size: 0.7rem;
+            color: var(--secondary-color);
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-icon {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: var(--shadow);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .hidden { display: none; }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .summary-value { font-size: 1.4rem; }
+            .controls button { flex: 1; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>ほしいものリスト</h1>
+    </header>
+
+    <div class="summary-card">
+        <div class="summary-item">
+            <span class="summary-label">全合計金額</span>
+            <span class="summary-value" id="total-amount">¥0</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">登録商品数</span>
+            <span class="summary-value" id="total-count">0</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-primary" onclick="showItemModal()">商品を追加</button>
+        <button class="btn-secondary" onclick="showCategoryModal()">カテゴリ管理</button>
+        <button class="btn-accent" onclick="exportData()">バックアップ</button>
+        <button class="btn-accent" onclick="document.getElementById('import-file').click()">復元</button>
+        <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(event)">
+    </div>
+
+    <div class="controls">
+        <select id="sort-select" onchange="renderAll()" style="padding: 8px; border-radius: 6px; background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color);">
+            <option value="date-desc">登録順 (新しい順)</option>
+            <option value="date-asc">登録順 (古い順)</option>
+            <option value="price-desc">価格が高い順</option>
+            <option value="price-asc">価格が低い順</option>
+            <option value="name-asc">名前順</option>
+        </select>
+    </div>
+
+    <div id="category-container" class="category-grid"></div>
+</div>
+
+<div id="item-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header" id="item-modal-title">商品を追加</div>
+        <input type="hidden" id="edit-item-id">
+        <div class="form-group">
+            <label>商品名</label>
+            <input type="text" id="item-name" placeholder="例：ゲーミングマウス">
+        </div>
+        <div class="form-group">
+            <label>カテゴリ</label>
+            <select id="item-category"></select>
+        </div>
+        <div class="form-group">
+            <label>URL</label>
+            <input type="url" id="item-url" placeholder="https://...">
+        </div>
+        <div class="form-group">
+            <label>価格</label>
+            <input type="number" id="item-price" placeholder="0">
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal('item-modal')">キャンセル</button>
+            <button class="btn-primary" onclick="saveItem()">保存</button>
+        </div>
+    </div>
+</div>
+
+<div id="category-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">カテゴリ管理</div>
+        <div class="form-group">
+            <label>新しいカテゴリ名</label>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="new-category-name" placeholder="例：本">
+                <button class="btn-primary" onclick="addCategory()">追加</button>
+            </div>
+        </div>
+        <div id="category-list-manage" style="max-height: 300px; overflow-y: auto; margin-top: 15px;"></div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal('category-modal')">閉じる</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let state = {
+        categories: ["デフォルト"],
+        items: []
+    };
+
+    function init() {
+        const saved = localStorage.getItem('wishlist_data');
+        if (saved) {
+            state = JSON.parse(saved);
+        }
+        renderAll();
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem('wishlist_data', JSON.stringify(state));
+    }
+
+    function formatPrice(num) {
+        return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(num);
+    }
+
+    function renderAll() {
+        renderSummary();
+        renderCategories();
+        updateCategoryDropdowns();
+    }
+
+    function renderSummary() {
+        const total = state.items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+        document.getElementById('total-amount').textContent = formatPrice(total);
+        document.getElementById('total-count').textContent = state.items.length;
+    }
+
+    function renderCategories() {
+        const container = document.getElementById('category-container');
+        container.innerHTML = '';
+
+        state.categories.forEach(catName => {
+            const catItems = state.items.filter(item => item.category === catName);
+            const sortedItems = sortItems(catItems);
+            const catTotal = sortedItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+
+            const card = document.createElement('div');
+            card.className = 'category-card';
+            card.innerHTML = `
+                <div class="category-header">
+                    <div>
+                        <div class="category-title">${catName}</div>
+                        <div class="category-stats">${sortedItems.length} 件 / ${formatPrice(catTotal)}</div>
+                    </div>
+                </div>
+                <ul class="item-list" id="list-${catName}"></ul>
+            `;
+
+            const list = card.querySelector('.item-list');
+            sortedItems.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'item-row';
+                li.innerHTML = `
+                    <div class="item-main">
+                        <span class="item-name">${item.name}</span>
+                        <span class="item-price">${formatPrice(item.price)}</span>
+                    </div>
+                    ${item.url ? `<a href="${item.url}" target="_blank" class="item-url">${item.url}</a>` : ''}
+                    <div class="item-footer">
+                        <span class="item-date">${new Date(item.createdAt).toLocaleDateString()}</span>
+                        <div class="item-actions">
+                            <button class="btn-secondary btn-icon" onclick="editItem('${item.id}')">編集</button>
+                            <button class="btn-danger btn-icon" onclick="deleteItem('${item.id}')">削除</button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+
+            container.appendChild(card);
+        });
+    }
+
+    function sortItems(items) {
+        const sortVal = document.getElementById('sort-select').value;
+        const sorted = [...items];
+        switch (sortVal) {
+            case 'date-desc': sorted.sort((a, b) => b.createdAt - a.createdAt); break;
+            case 'date-asc': sorted.sort((a, b) => a.createdAt - b.createdAt); break;
+            case 'price-desc': sorted.sort((a, b) => b.price - a.price); break;
+            case 'price-asc': sorted.sort((a, b) => a.price - b.price); break;
+            case 'name-asc': sorted.sort((a, b) => a.name.localeCompare(b.name, 'ja')); break;
+        }
+        return sorted;
+    }
+
+    function updateCategoryDropdowns() {
+        const select = document.getElementById('item-category');
+        select.innerHTML = '';
+        state.categories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            select.appendChild(opt);
+        });
+
+        const manageList = document.getElementById('category-list-manage');
+        manageList.innerHTML = '';
+        state.categories.forEach((cat, index) => {
+            const div = document.createElement('div');
+            div.style = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-color);';
+            div.innerHTML = `
+                <span>${cat}</span>
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn-secondary btn-icon" onclick="renameCategory('${cat}')">改名</button>
+                    <button class="btn-danger btn-icon" onclick="removeCategory('${cat}')">削除</button>
+                </div>
+            `;
+            manageList.appendChild(div);
+        });
+    }
+
+    function showItemModal(id = null) {
+        const modal = document.getElementById('item-modal');
+        const title = document.getElementById('item-modal-title');
+        const nameInput = document.getElementById('item-name');
+        const catInput = document.getElementById('item-category');
+        const urlInput = document.getElementById('item-url');
+        const priceInput = document.getElementById('item-price');
+        const idInput = document.getElementById('edit-item-id');
+
+        if (id) {
+            const item = state.items.find(i => i.id === id);
+            title.textContent = '商品を編集';
+            idInput.value = item.id;
+            nameInput.value = item.name;
+            catInput.value = item.category;
+            urlInput.value = item.url;
+            priceInput.value = item.price;
+        } else {
+            title.textContent = '商品を追加';
+            idInput.value = '';
+            nameInput.value = '';
+            urlInput.value = '';
+            priceInput.value = '';
+        }
+        modal.style.display = 'flex';
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    function saveItem() {
+        const id = document.getElementById('edit-item-id').value;
+        const name = document.getElementById('item-name').value;
+        const category = document.getElementById('item-category').value;
+        const url = document.getElementById('item-url').value;
+        const price = Number(document.getElementById('item-price').value) || 0;
+
+        if (!name) return alert('商品名を入力してください');
+
+        if (id) {
+            const index = state.items.findIndex(i => i.id === id);
+            state.items[index] = { ...state.items[index], name, category, url, price };
+        } else {
+            state.items.push({
+                id: Date.now().toString(),
+                name,
+                category,
+                url,
+                price,
+                createdAt: Date.now()
+            });
+        }
+
+        saveToLocalStorage();
+        renderAll();
+        closeModal('item-modal');
+    }
+
+    function editItem(id) {
+        showItemModal(id);
+    }
+
+    function deleteItem(id) {
+        if (!confirm('この商品を削除しますか？')) return;
+        state.items = state.items.filter(i => i.id !== id);
+        saveToLocalStorage();
+        renderAll();
+    }
+
+    function showCategoryModal() {
+        document.getElementById('category-modal').style.display = 'flex';
+    }
+
+    function addCategory() {
+        const name = document.getElementById('new-category-name').value.trim();
+        if (!name) return;
+        if (state.categories.includes(name)) return alert('既に存在します');
+        state.categories.push(name);
+        document.getElementById('new-category-name').value = '';
+        saveToLocalStorage();
+        renderAll();
+    }
+
+    function renameCategory(oldName) {
+        const newName = prompt('新しいカテゴリ名を入力してください', oldName);
+        if (!newName || newName === oldName) return;
+        if (state.categories.includes(newName)) return alert('既に存在します');
+
+        state.categories = state.categories.map(c => c === oldName ? newName : c);
+        state.items.forEach(item => {
+            if (item.category === oldName) item.category = newName;
+        });
+
+        saveToLocalStorage();
+        renderAll();
+    }
+
+    function removeCategory(name) {
+        if (state.categories.length <= 1) return alert('最後のカテゴリは削除できません');
+        if (!confirm(`カテゴリ「${name}」を削除しますか？（中の商品はデフォルトに移動します）`)) return;
+
+        state.categories = state.categories.filter(c => c !== name);
+        const defaultCat = state.categories[0];
+        state.items.forEach(item => {
+            if (item.category === name) item.category = defaultCat;
+        });
+
+        saveToLocalStorage();
+        renderAll();
+    }
+
+    function exportData() {
+        const dataStr = JSON.stringify(state, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `wishlist_backup_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (imported.categories && imported.items) {
+                    state = imported;
+                    saveToLocalStorage();
+                    renderAll();
+                    alert('復元が完了しました');
+                }
+            } catch (err) {
+                alert('無効なファイルです');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    window.onclick = function(event) {
+        if (event.target.className === 'modal') {
+            event.target.style.display = 'none';
+        }
+    }
+
+    init();
+</script>
+
+</body>
+</html>
