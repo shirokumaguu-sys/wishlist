@@ -13,6 +13,7 @@
             --secondary-color: #6c757d;
             --accent-color: #ffc107;
             --danger-color: #dc3545;
+            --success-color: #198754;
             --border-color: #dee2e6;
             --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
@@ -60,14 +61,14 @@
             border-radius: 12px;
             box-shadow: var(--shadow);
             margin-bottom: 30px;
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
         }
 
         .summary-item {
             text-align: center;
+            padding: 10px;
         }
 
         .summary-label {
@@ -77,9 +78,13 @@
         }
 
         .summary-value {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: bold;
             color: var(--primary-color);
+        }
+
+        .summary-value.checked {
+            color: var(--success-color);
         }
 
         .controls {
@@ -112,7 +117,7 @@
 
         .category-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 20px;
         }
 
@@ -122,15 +127,21 @@
             box-shadow: var(--shadow);
             overflow: hidden;
             border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
         }
 
         .category-header {
             padding: 15px;
             border-bottom: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.03);
+        }
+
+        .category-title-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(0,0,0,0.03);
+            margin-bottom: 5px;
         }
 
         .category-title {
@@ -139,26 +150,49 @@
         }
 
         .category-stats {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: var(--secondary-color);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .cat-total-label {
+            font-weight: bold;
+            color: var(--primary-color);
         }
 
         .item-list {
             list-style: none;
-            padding: 10px;
+            padding: 0;
+            flex-grow: 1;
         }
 
         .item-row {
-            padding: 10px;
+            padding: 12px 15px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
-            flex-direction: column;
-            gap: 5px;
-            position: relative;
+            gap: 12px;
+            align-items: flex-start;
+            transition: background-color 0.2s;
         }
 
-        .item-row:last-child {
-            border-bottom: none;
+        .item-row:hover {
+            background-color: rgba(0,0,0,0.02);
+        }
+
+        .item-checkbox {
+            margin-top: 5px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .item-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         .item-main {
@@ -177,6 +211,12 @@
             font-weight: bold;
             color: var(--primary-color);
             margin-left: 10px;
+            white-space: nowrap;
+        }
+
+        .item-row.checked .item-name {
+            text-decoration: line-through;
+            color: var(--secondary-color);
         }
 
         .item-url {
@@ -209,7 +249,7 @@
 
         .btn-icon {
             padding: 4px 8px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
 
         .modal {
@@ -271,8 +311,9 @@
 
         @media (max-width: 600px) {
             body { padding: 10px; }
-            .summary-value { font-size: 1.4rem; }
-            .controls button { flex: 1; justify-content: center; }
+            .summary-card { grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
+            .summary-value { font-size: 1.2rem; }
+            .controls button { flex: 1; justify-content: center; font-size: 0.9rem; padding: 10px 5px; }
         }
     </style>
 </head>
@@ -289,8 +330,16 @@
             <span class="summary-value" id="total-amount">¥0</span>
         </div>
         <div class="summary-item">
+            <span class="summary-label">チェック合計</span>
+            <span class="summary-value checked" id="checked-amount">¥0</span>
+        </div>
+        <div class="summary-item">
             <span class="summary-label">登録商品数</span>
             <span class="summary-value" id="total-count">0</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">チェック数</span>
+            <span class="summary-value checked" id="checked-count">0</span>
         </div>
     </div>
 
@@ -389,8 +438,13 @@
 
     function renderSummary() {
         const total = state.items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+        const checkedItems = state.items.filter(item => item.checked);
+        const checkedTotal = checkedItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+
         document.getElementById('total-amount').textContent = formatPrice(total);
+        document.getElementById('checked-amount').textContent = formatPrice(checkedTotal);
         document.getElementById('total-count').textContent = state.items.length;
+        document.getElementById('checked-count').textContent = checkedItems.length;
     }
 
     function renderCategories() {
@@ -400,35 +454,46 @@
         state.categories.forEach(catName => {
             const catItems = state.items.filter(item => item.category === catName);
             const sortedItems = sortItems(catItems);
+            
             const catTotal = sortedItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+            const catCheckedTotal = sortedItems.filter(i => i.checked).reduce((sum, item) => sum + (Number(item.price) || 0), 0);
 
             const card = document.createElement('div');
             card.className = 'category-card';
             card.innerHTML = `
                 <div class="category-header">
-                    <div>
+                    <div class="category-title-row">
                         <div class="category-title">${catName}</div>
-                        <div class="category-stats">${sortedItems.length} 件 / ${formatPrice(catTotal)}</div>
+                        <div class="category-stats">
+                            <span>商品数: ${sortedItems.length}</span>
+                        </div>
+                    </div>
+                    <div class="category-stats">
+                        <span class="cat-total-label">カテゴリ合計: ${formatPrice(catTotal)}</span>
+                        <span style="color: var(--success-color); font-size: 0.75rem;">チェック済み: ${formatPrice(catCheckedTotal)}</span>
                     </div>
                 </div>
-                <ul class="item-list" id="list-${catName}"></ul>
+                <ul class="item-list"></ul>
             `;
 
             const list = card.querySelector('.item-list');
             sortedItems.forEach(item => {
                 const li = document.createElement('li');
-                li.className = 'item-row';
+                li.className = `item-row ${item.checked ? 'checked' : ''}`;
                 li.innerHTML = `
-                    <div class="item-main">
-                        <span class="item-name">${item.name}</span>
-                        <span class="item-price">${formatPrice(item.price)}</span>
-                    </div>
-                    ${item.url ? `<a href="${item.url}" target="_blank" class="item-url">${item.url}</a>` : ''}
-                    <div class="item-footer">
-                        <span class="item-date">${new Date(item.createdAt).toLocaleDateString()}</span>
-                        <div class="item-actions">
-                            <button class="btn-secondary btn-icon" onclick="editItem('${item.id}')">編集</button>
-                            <button class="btn-danger btn-icon" onclick="deleteItem('${item.id}')">削除</button>
+                    <input type="checkbox" class="item-checkbox" ${item.checked ? 'checked' : ''} onchange="toggleCheck('${item.id}')">
+                    <div class="item-content">
+                        <div class="item-main">
+                            <span class="item-name">${item.name}</span>
+                            <span class="item-price">${formatPrice(item.price)}</span>
+                        </div>
+                        ${item.url ? `<a href="${item.url}" target="_blank" class="item-url">${item.url}</a>` : ''}
+                        <div class="item-footer">
+                            <span class="item-date">${new Date(item.createdAt).toLocaleDateString()}</span>
+                            <div class="item-actions">
+                                <button class="btn-secondary btn-icon" onclick="editItem('${item.id}')">編集</button>
+                                <button class="btn-danger btn-icon" onclick="deleteItem('${item.id}')">削除</button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -450,6 +515,15 @@
             case 'name-asc': sorted.sort((a, b) => a.name.localeCompare(b.name, 'ja')); break;
         }
         return sorted;
+    }
+
+    function toggleCheck(id) {
+        const item = state.items.find(i => i.id === id);
+        if (item) {
+            item.checked = !item.checked;
+            saveToLocalStorage();
+            renderAll();
+        }
     }
 
     function updateCategoryDropdowns() {
@@ -528,6 +602,7 @@
                 category,
                 url,
                 price,
+                checked: false,
                 createdAt: Date.now()
             });
         }
